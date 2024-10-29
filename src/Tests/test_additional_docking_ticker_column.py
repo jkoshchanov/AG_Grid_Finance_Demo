@@ -2,7 +2,7 @@
 # Identify and implement at least two more tests that you believe are important to verify for this grid.
 # Be prepared to explain your reasoning for choosing these tests.
 # For instance: drag the Ticker column after Instrument column and verify undocking/docking is successful
-
+import asyncio
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
@@ -11,21 +11,14 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.action_chains import ActionChains
 import time
 
-# Set up the WebDriver
-# Chrome driver - Chrome browser
-# --Chrome
-service_obj = Service()  # seleniumManager
-# set up chrome options
-options = webdriver.ChromeOptions()
-options.add_experimental_option("detach", True)
-# initialize the webdriver
-driver = webdriver.Chrome(options=options, service=service_obj)
-# add global timeout for 10 seconds max
+driver = webdriver.Chrome()
 driver.implicitly_wait(10)
+driver.maximize_window()
 
 # Open the specified URL
 driver.get("https://www.ag-grid.com/example-finance/")
-driver.maximize_window()
+print(driver.title)
+print(driver.current_url)
 
 
 # Locate the "Ticker" and "Instrument" column headers using XPath
@@ -37,12 +30,17 @@ actions = ActionChains(driver)
 actions.click_and_hold(ticker_column).move_to_element(instrument_column).move_by_offset(50, 0).release().perform()
 
 # Brief pause to allow the grid to update
-time.sleep(2)
+time.sleep(5)
 
 # Verification
 # Check if "Ticker" column is now located after "Instrument" in the header row
-header_cells = driver.find_elements(By.XPATH, "//div[contains(@class, 'ag-header-cell')]")
+# rows = WebDriverWait(driver, 10).until(
+#     EC.presence_of_all_elements_located((By.XPATH, "//*[@role='row']")))
+header_cells = driver.find_elements(By.XPATH, "//div[@role='columnheader']")
+# header_cells = rows[0].text
+
 header_order = [cell.get_attribute("col-id") for cell in header_cells]
+print(header_order)
 
 # Verify the "Ticker" column is now positioned after the "Instrument" column
 try:
@@ -52,4 +50,5 @@ except AssertionError as e:
     print(e)
 
 # Close the browser
-driver.quit()
+# driver.quit()
+
