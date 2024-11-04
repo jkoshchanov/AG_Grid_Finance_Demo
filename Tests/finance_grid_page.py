@@ -149,3 +149,6 @@ class FinanceGridPage:
             row_counts[instrument] = row_count
             print(f"Rows for '{instrument}': {row_count}")
         return row_counts
+
+    # Assignment 5
+
