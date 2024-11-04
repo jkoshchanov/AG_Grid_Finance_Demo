@@ -1,5 +1,4 @@
-*** Note *** Apologies, but did not have time left to put my scripts into POM structure to make more readable and efficienct. If you could give me an opportunity to discuss it, I d be happy to do so. Thank you again! -Jasur
-*** Note ***: Please note that I have used Python with Selenium framework and ran the scripts locally in the terminal to check the functionality and get the output. 
+*** Please note that I have used Python with Selenium framework and ran the scripts locally in the terminal to check the functionality and get the output. 
 
 # AG_Grid_Finance_Demo
 This is to demonstrate Finance page functionality in AG_Grid UI
