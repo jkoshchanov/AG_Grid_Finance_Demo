@@ -4,7 +4,7 @@
 
 import unittest
 from selenium import webdriver
-from finance_grid_page import FinanceGridPage
+from Pages.finance_grid_page import FinanceGridPage
 
 expected_values = ["Bond", "ETF", "Crypto", "Stock"]
 
