@@ -1,4 +1,4 @@
-#TODO 1. Create an automated end-to-end test suite for the "Finance" demo grid available at: https://www.ag-grid.com/example-finance/
+#TODO Assignment 1. Create an automated end-to-end test suite for the "Finance" demo grid available at: https://www.ag-grid.com/example-finance/
 # Your test suite should verify the Sorting Functionality
 # Verify that the grid can be sorted by the "Ticker" column
 
@@ -17,7 +17,8 @@ class TestTickerSorting(unittest.TestCase):
 
     def test_sort_ticker_column_descending(self):
         self.page.sort_ticker_column_descending()
-        ticker_texts = self.page.get_column_text('ticker')
+        ticker_texts = self.page.get_all_column_text('ticker')
+        print(len(ticker_texts))
         self.assertTrue(self.page.is_sorted_descending(ticker_texts))
 
     def tearDown(self):
@@ -26,6 +27,6 @@ class TestTickerSorting(unittest.TestCase):
 
 
 # this helps us to run tests as a suite and better integration with CI/CD
-# this also provides clear output for each tests indicating pass/fail reasons
+# this also provides clear output for each test indicating pass/fail reasons
 if __name__ == '__main__':
     unittest.main()

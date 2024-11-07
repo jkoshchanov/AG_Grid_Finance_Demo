@@ -22,7 +22,8 @@ class FinanceGridPage:
     INSTRUMENT_FILTER_BUTTON = (By.XPATH, "//div[@col-id='instrument']//span[@data-ref='eFilterButton']")
     FILTER_INPUT = (By.XPATH, "//div[@data-ref='eMiniFilter']//input[@data-ref='eInput']")
     COLUMN_HEADER = (By.XPATH, "//div[@role='columnheader']")
-    FILTERED_ROWS =  (By.XPATH, "//div[contains(@class, 'ag-row')]")
+    FILTERED_ROWS = (By.XPATH, "//div[contains(@class, 'ag-row')]")
+    TABLE_CONTAINER = (By.CSS_SELECTOR, ".ag-center-cols-viewport")
 
 
     def wait_for_element_visibility(self, locator, timeout=2):
@@ -52,9 +53,54 @@ class FinanceGridPage:
     def get_column_text(self, column_id):
         self.wait_for_element_presence(self.ROW_LOCATOR)
         column_cells = self.driver.find_elements(By.XPATH, f"//*[@col-id='{column_id}']")
-        return [cell.text for cell in column_cells if cell.text][1:]
+        return {cell.id: cell.text for index, cell in enumerate(column_cells) if cell.text and index > 0}
 
-    # Assignment 1
+    def scroll_down_table(self, scroll_increment):
+        # locate the main vertical scroll container
+        vertical_scroll_container = self.driver.find_element(By.CSS_SELECTOR, ".ag-body-viewport")
+
+        current_scroll_position = self.driver.execute_script("return arguments[0].scrollTop;", vertical_scroll_container)
+        new_scroll_position = current_scroll_position + scroll_increment
+
+        # Scroll to the new position
+        self.driver.execute_script("arguments[0].scrollTop = arguments[1];", vertical_scroll_container,
+                                   new_scroll_position)
+        time.sleep(1)  # Pause to allow rows to load
+
+    def scroll_up_table(self):
+        vertical_scroll_container = self.driver.find_element(By.CSS_SELECTOR, ".ag-body-viewport")
+        self.driver.execute_script("arguments[0].scrollTop = arguments[1];", vertical_scroll_container, 0)
+
+    def get_all_column_text(self, column_id):
+        # Store all collected text in a set to avoid duplicates
+        all_text = {}
+        last_row_count = -1
+
+        while True:
+            # Capture text from the visible rows
+            visible_text_dict = self.get_column_text(column_id)
+
+            # Add visible text to the all_text set
+            for text_id in visible_text_dict.keys():
+                if text_id not in all_text:
+                    all_text[text_id] = visible_text_dict[text_id]
+
+            # If the number of rows hasn't changed after a scroll, assume we've reached the end
+            if len(all_text) == last_row_count:
+                break
+
+            # Update last_row_count and scroll down
+            last_row_count = len(all_text)
+            self.scroll_down_table(500)
+
+        self.scroll_up_table()
+
+        all_text_values = list(all_text.values())
+        print(len(all_text_values))
+        print(all_text_values)
+        return all_text_values
+
+    # Assignment 1 *****************************************************************
     def sort_ticker_column_descending(self):
         ticker_header = self.wait_for_element_clickable(self.TICKER_HEADER)
         ticker_header.click()
@@ -64,22 +110,22 @@ class FinanceGridPage:
     def is_sorted_descending(self, column_texts):
         return column_texts == sorted(column_texts, reverse=True)
 
-    # Assignment 2
+    # Assignment 2 *****************************************************************
     def check_invalid_values(self, ticker_texts, instrument_texts, expected_values):
         invalid_values = {}
         for i in range(len(instrument_texts)):  # using range to avoid using sequential loops for efficiency
-            if i > 0:  # skip header row
-                stock = ticker_texts[i]  # assigning value to stock
-                instrument = instrument_texts[i]  # assigning value to instrument
-                if instrument not in expected_values:
-                    invalid_values[stock] = instrument
+            # if i > 0:  # skip header row
+            stock = ticker_texts[i]  # assigning value to stock
+            instrument = instrument_texts[i]  # assigning value to instrument
+            if instrument not in expected_values:
+                invalid_values[stock] = instrument
 
         if len(invalid_values) > 0:
             return [False, 'something is wrong, check the following stock names: ' + ", ".join(invalid_values.keys())]
         else:
             return [True, None]
 
-    # Assignment 3
+    # Assignment 3 ******************************************************************
     def get_cell_value(self, row_index, column_id):
         if column_id in ["0", "1"]:
             cell_value = self.driver.find_element(
@@ -124,7 +170,7 @@ class FinanceGridPage:
 
         return all_cells_valid
 
-    # Assignment 4
+    # Assignment 4 *****************************************************************
     def apply_filter_and_count_rows(self, instrument_type):
         instrument_filter_button = self.wait_for_element_clickable(self.INSTRUMENT_FILTER_BUTTON)
         self.click_element(instrument_filter_button)
@@ -152,7 +198,7 @@ class FinanceGridPage:
             print(f"Rows for '{instrument}': {row_count}")
         return row_counts
 
-    # Assignment 5
+    # Assignment 5 *****************************************************************
     def drag_drop(self, column1, column2):
         actions = ActionChains(self.driver)
         actions.click_and_hold(column1).move_to_element(column2).move_by_offset(50,0).release().perform()

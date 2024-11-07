@@ -1,4 +1,4 @@
-#TODO 3. Numeric Columns Validation:
+#TODO Assignment 3. Numeric Columns Validation:
 # Confirm that the cells in the following columns contain numeric
 # values: P&L | Total Value | Quantity | Price
 
