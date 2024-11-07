@@ -1,7 +1,7 @@
 from time import sleep
 
 from selenium.common import NoSuchElementException
-from selenium.webdriver import Keys
+from selenium.webdriver import Keys, ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -24,7 +24,8 @@ class FinanceGridPage:
     COLUMN_HEADER = (By.XPATH, "//div[@role='columnheader']")
     FILTERED_ROWS =  (By.XPATH, "//div[contains(@class, 'ag-row')]")
 
-    def wait_for_element_visibility(self, locator, timeout=10):
+
+    def wait_for_element_visibility(self, locator, timeout=2):
         return WebDriverWait(self.driver, timeout).until(
             EC.visibility_of_element_located(locator)
         )
@@ -32,6 +33,11 @@ class FinanceGridPage:
     def wait_for_element_presence(self, locator, timeout=10):
         return WebDriverWait(self.driver, timeout).until(
             EC.presence_of_all_elements_located(locator)
+        )
+
+    def wait_for_cell_presence(self, locator, timeout=10):
+        return WebDriverWait(self.driver, timeout).until(
+            EC.presence_of_element_located(locator)
         )
 
     def wait_for_element_clickable(self, locator, timeout=10):
@@ -59,7 +65,7 @@ class FinanceGridPage:
         return column_texts == sorted(column_texts, reverse=True)
 
     # Assignment 2
-    def get_invalid_values(self, ticker_texts, instrument_texts, expected_values):
+    def check_invalid_values(self, ticker_texts, instrument_texts, expected_values):
         invalid_values = {}
         for i in range(len(instrument_texts)):  # using range to avoid using sequential loops for efficiency
             if i > 0:  # skip header row
@@ -68,27 +74,23 @@ class FinanceGridPage:
                 if instrument not in expected_values:
                     invalid_values[stock] = instrument
 
-        return invalid_values
-
-    def contains_invalid_values(self, invalid_values):
-        # return not bool(len(invalid_values))
         if len(invalid_values) > 0:
-            print('something is wrong, check the following stock names: ' + ", ".join(invalid_values.keys()))
-            return False
+            return [False, 'something is wrong, check the following stock names: ' + ", ".join(invalid_values.keys())]
         else:
-            return True
+            return [True, None]
 
     # Assignment 3
     def get_cell_value(self, row_index, column_id):
-        cell = self.driver.find_element(
-            By.XPATH,
-            f".//div[@role='row' and @row-index='{row_index}']//div[@role='gridcell' and @col-id='{column_id}']"
-        )
-
-        cell_value = cell.find_element(
-            By.CLASS_NAME,
-            "ag-value-change-value"
-        ).text if column_id in ["0", "1"] else cell.text
+        if column_id in ["0", "1"]:
+            cell_value = self.driver.find_element(
+                By.XPATH,
+                f".//div[@role='row' and @row-index='{row_index}']//div[@role='gridcell' and @col-id='{column_id}']//span[@class='ag-value-change-value']"
+            ).text
+        else:
+            cell_value = self.driver.find_element(
+                By.XPATH,
+                f".//div[@role='row' and @row-index='{row_index}']//div[@role='gridcell' and @col-id='{column_id}']"
+            ).text
         return cell_value
 
     def is_numeric(self, value):
@@ -149,3 +151,19 @@ class FinanceGridPage:
             row_counts[instrument] = row_count
             print(f"Rows for '{instrument}': {row_count}")
         return row_counts
+
+    # Assignment 5
+    def drag_drop(self, column1, column2):
+        actions = ActionChains(self.driver)
+        actions.click_and_hold(column1).move_to_element(column2).move_by_offset(50,0).release().perform()
+        time.sleep(2)
+
+    def retrieve_column(self, locator):
+        return self.wait_for_cell_presence(locator)
+
+    def retrieve_x_position(self, column):
+        return column.location['x']
+
+
+
+

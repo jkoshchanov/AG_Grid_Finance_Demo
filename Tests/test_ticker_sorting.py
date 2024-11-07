@@ -11,7 +11,7 @@ class TestTickerSorting(unittest.TestCase):
 
     def setUp(self):
         self.driver = webdriver.Chrome()
-        self.driver.implicitly_wait(10)
+        self.driver.implicitly_wait(3)
         self.driver.maximize_window()
         self.page = FinanceGridPage(self.driver)
 
