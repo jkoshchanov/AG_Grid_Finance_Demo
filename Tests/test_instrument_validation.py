@@ -18,10 +18,15 @@ class InstrumentColumnValidation(unittest.TestCase):
 
     def test_validate_columns(self):
 
-        instruments = self.page.get_column_text("instrument")
-        ticker_elements = self.page.get_column_text("ticker")
-        invalid_values = self.page.get_invalid_values(instruments, ticker_elements, expected_values)
-        self.assertTrue(self.page.verify_no_invalid_values(invalid_values))
+        ticker_texts = self.page.get_column_text('ticker')
+        instrument_texts = self.page.get_column_text('instrument')
+        validity, msg = self.page.check_invalid_values(ticker_texts, instrument_texts, expected_values)
+        if validity:
+            print('passed')
+
+        self.assertTrue(validity, msg=msg)
+
+
 
     def tearDown(self):
         # Close the browser
