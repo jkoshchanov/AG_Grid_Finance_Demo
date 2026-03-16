@@ -53,7 +53,17 @@ class FinanceGridPage:
     def get_column_text(self, column_id):
         self.wait_for_element_presence(self.ROW_LOCATOR)
         column_cells = self.driver.find_elements(By.XPATH, f"//*[@col-id='{column_id}']")
-        return {cell.id: cell.text for index, cell in enumerate(column_cells) if cell.text and index > 0}
+        result = {}
+        for index, cell in enumerate(column_cells):
+            if index > 0:  # Skip header row
+                try:
+                    text = cell.text
+                    if text:
+                        result[cell.id] = text
+                except NoSuchElementException:
+                    # Element became stale, skip it
+                    continue
+        return result
 
     def scroll_down_table(self, scroll_increment):
         # locate the main vertical scroll container
@@ -127,17 +137,21 @@ class FinanceGridPage:
 
     # Assignment 3 ******************************************************************
     def get_cell_value(self, row_index, column_id):
-        if column_id in ["0", "1"]:
-            cell_value = self.driver.find_element(
-                By.XPATH,
-                f".//div[@role='row' and @row-index='{row_index}']//div[@role='gridcell' and @col-id='{column_id}']//span[@class='ag-value-change-value']"
-            ).text
-        else:
-            cell_value = self.driver.find_element(
-                By.XPATH,
-                f".//div[@role='row' and @row-index='{row_index}']//div[@role='gridcell' and @col-id='{column_id}']"
-            ).text
-        return cell_value
+        try:
+            if column_id in ["0", "1"]:
+                cell_value = self.wait_for_cell_presence(
+                    (By.XPATH, f".//div[@role='row' and @row-index='{row_index}']//div[@role='gridcell' and @col-id='{column_id}']//span[@class='ag-value-change-value']"),
+                    timeout=2
+                ).text
+            else:
+                cell_value = self.wait_for_cell_presence(
+                    (By.XPATH, f".//div[@role='row' and @row-index='{row_index}']//div[@role='gridcell' and @col-id='{column_id}']"),
+                    timeout=2
+                ).text
+            return cell_value
+        except Exception as e:
+            print(f"Error getting cell value for row-index={row_index}, col-id={column_id}: {str(e)}")
+            raise
 
     def is_numeric(self, value):
         if value == '' or value is None:
@@ -150,23 +164,35 @@ class FinanceGridPage:
 
     def is_all_cells_valid(self, numeric_columns):
         all_cells_valid = True
+        max_attempts = 0
 
         # Locate all rows in the grid
         rows = self.wait_for_element_presence(self.ROW_LOCATOR)
 
         # Loop over each column and validate numeric cells
         for column_id, column_name in numeric_columns.items():
+            max_attempts = 0
             # Iterate over each row to find the cell in the current column
-            for row_index in range(len(rows)-1):
+            for row in rows[1:]:  # Skip the header row
+                max_attempts += 1
+                if max_attempts > 100:  # Safety limit to prevent infinite loops
+                    print(f"Reached max attempts limit for column '{column_name}'. Stopping iteration.")
+                    break
                 try:
+                    row_index = row.get_attribute('row-index')
+                    if row_index is None:
+                        continue
                     cell_value = self.get_cell_value(row_index, column_id)
                     # Check if the cell's text is numeric
                     if not self.is_numeric(cell_value):
                         print(f"Non-numeric value found in column '{column_name}': {cell_value}")
                         all_cells_valid = False
                 except NoSuchElementException:
-                    print(f"No more rows found with aria-rowindex '{row_index}'. Exiting loop.")
-                    continue
+                    print(f"Element not found for column '{column_id}' at row-index '{row_index}'. Stopping column validation.")
+                    break
+                except Exception as e:
+                    print(f"Unexpected error in column '{column_name}': {str(e)}")
+                    break
 
         return all_cells_valid
 
@@ -208,7 +234,17 @@ class FinanceGridPage:
         return self.wait_for_cell_presence(locator)
 
     def retrieve_x_position(self, column):
-        return column.location['x']
+        from selenium.common.exceptions import StaleElementReferenceException
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                return column.location['x']
+            except StaleElementReferenceException:
+                if attempt < max_retries - 1:
+                    print(f"Stale element detected (attempt {attempt + 1}), retrying...")
+                    time.sleep(1)
+                else:
+                    raise
 
 
 
